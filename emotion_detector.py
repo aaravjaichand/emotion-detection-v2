@@ -9,7 +9,7 @@ import os
 class EmotionDetector:
     def __init__(self):
         """Initialize the emotion detection pipeline."""
-        self.pipe = pipeline("image-classification", model="prithivMLmods/Facial-Emotion-Detection-SigLIP2")
+        self.pipe = pipeline("image-classification", model="dima806/facial_emotions_image_detection")
     
     def detect_emotion(self, image):
         """

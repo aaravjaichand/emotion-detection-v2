@@ -16,7 +16,7 @@ detector = EmotionDetector()
 
 # Global variables for face recognition
 reference_image_encoding = None
-face_recognizer_tolerance = 0.6
+face_recognizer_tolerance = 0.5
 
 # Global variable to store current emotion
 current_emotion = {"emotion": "Neutral", "confidence": 0.0}
@@ -39,36 +39,41 @@ def generate_frames():
     last_emotion_time = time.time()
     emotion_update_interval = 0.5
     
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
+    try:
+        while True:
+            success, frame = cap.read()
+            if not success:
+                break
+                
+            # Skip frames for emotion detection to improve performance
+            current_time = time.time()
+            if current_time - last_emotion_time >= emotion_update_interval:
+                # Convert BGR to RGB
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                
+                # Detect emotion
+                result = detector.detect_emotion(frame_rgb)
+                
+                # Update global emotion state
+                global current_emotion
+                current_emotion = result
+                
+                last_emotion_time = current_time
             
-        # Skip frames for emotion detection to improve performance
-        current_time = time.time()
-        if current_time - last_emotion_time >= emotion_update_interval:
-            # Convert BGR to RGB
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # Optimize JPEG encoding
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]  # Slightly reduced quality for better performance
+            ret, buffer = cv2.imencode('.jpg', frame, encode_param)
+            frame = buffer.tobytes()
             
-            # Detect emotion
-            result = detector.detect_emotion(frame_rgb)
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
             
-            # Update global emotion state
-            global current_emotion
-            current_emotion = result
-            
-            last_emotion_time = current_time
-        
-        # Optimize JPEG encoding
-        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]  # Slightly reduced quality for better performance
-        ret, buffer = cv2.imencode('.jpg', frame, encode_param)
-        frame = buffer.tobytes()
-        
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-        
-        # Small delay to prevent overwhelming the system
-        time.sleep(0.01)
+            # Small delay to prevent overwhelming the system
+            time.sleep(0.01)
+    finally:
+        # Ensure resources are properly released
+        cap.release()
+        cv2.destroyAllWindows()
 
 @app.route('/')
 def index():
