@@ -6,6 +6,8 @@ import json
 from werkzeug.utils import secure_filename
 import os
 from PIL import Image
+import time
+import io
 
 app = Flask(__name__)
 detector = EmotionDetector()
@@ -13,37 +15,54 @@ detector = EmotionDetector()
 # Global variable to store current emotion
 current_emotion = {"emotion": "Neutral", "confidence": 0.0}
 
-# Set the upload folder and allowed extensions
-UPLOAD_FOLDER = 'uploads'
+# Set the allowed extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def generate_frames():
     """Generate frames from webcam with emotion detection."""
     cap = cv2.VideoCapture(0)
+    
+    # Set camera properties for better performance
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  # Reduced resolution
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    cap.set(cv2.CAP_PROP_FPS, 30)  # Set to 30 FPS
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimize buffer size
+    
+    # Initialize variables for frame skipping
+    frame_count = 0
+    last_emotion_time = time.time()
+    emotion_update_interval = 0.5  # Update emotion every 0.5 seconds
     
     while True:
         success, frame = cap.read()
         if not success:
             break
             
-        # Convert BGR to RGB
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # Skip frames for emotion detection to improve performance
+        current_time = time.time()
+        if current_time - last_emotion_time >= emotion_update_interval:
+            # Convert BGR to RGB
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            # Detect emotion
+            result = detector.detect_emotion(frame_rgb)
+            
+            # Update global emotion state
+            global current_emotion
+            current_emotion = result
+            
+            last_emotion_time = current_time
         
-        # Detect emotion
-        result = detector.detect_emotion(frame_rgb)
-        
-        # Update global emotion state
-        global current_emotion
-        current_emotion = result
-        
-        # Encode frame to JPEG
-        ret, buffer = cv2.imencode('.jpg', frame)
+        # Optimize JPEG encoding
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]  # Slightly reduced quality for better performance
+        ret, buffer = cv2.imencode('.jpg', frame, encode_param)
         frame = buffer.tobytes()
         
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        
+        # Small delay to prevent overwhelming the system
+        time.sleep(0.01)
 
 @app.route('/')
 def index():
@@ -73,18 +92,20 @@ def upload_image():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+        # Read the image directly from memory
+        image_data = file.read()
+        image = Image.open(io.BytesIO(image_data))
         
         # Call the emotion detection function
-        result = detector.detect_emotion(Image.open(file_path))
+        result = detector.detect_emotion(image)
         
-        return jsonify({"message": "File uploaded successfully", "emotion": result['emotion'], "confidence": result['confidence']}), 200
+        return jsonify({
+            "message": "File processed successfully", 
+            "emotion": result['emotion'], 
+            "confidence": result['confidence']
+        }), 200
     else:
         return jsonify({"error": "File type not allowed"}), 400
 
 if __name__ == '__main__':
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True) 
