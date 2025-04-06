@@ -1,22 +1,28 @@
-from flask import Blueprint, render_template, Response, jsonify, request
+from flask import Flask, render_template, Response, jsonify, request
 import cv2
 import numpy as np
-import time
-import io
+from emotion_detector import EmotionDetector
+import json
 from werkzeug.utils import secure_filename
 import os
+from PIL import Image
+import time
+import io
+import face_recognition
+import tempfile
 
-from app.models.emotion_detector import EmotionDetector
-from app.models.face_recognizer import FaceRecognizer
-
-main = Blueprint('main', __name__)
-
-# Initialize detectors
+app = Flask(__name__)
 detector = EmotionDetector()
-face_recognizer = FaceRecognizer()
+
+# Global variables for face recognition
+reference_image_encoding = None
+face_recognizer_tolerance = 0.6
 
 # Global variable to store current emotion
 current_emotion = {"emotion": "Neutral", "confidence": 0.0}
+
+# Set the allowed extensions
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 def generate_frames():
     """Generate frames from webcam with emotion detection."""
@@ -64,75 +70,113 @@ def generate_frames():
         # Small delay to prevent overwhelming the system
         time.sleep(0.01)
 
-@main.route('/')
+@app.route('/')
 def index():
     """Render the main emotion detection page."""
     return render_template('index.html')
 
-@main.route('/face_recognition')
+@app.route('/face_recognition')
 def face_recognition_page():
     """Render the face recognition page."""
     return render_template('face_recognition.html')
 
-@main.route('/video_feed')
+@app.route('/video_feed')
 def video_feed():
     """Video streaming route."""
     return Response(generate_frames(),
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@main.route('/get_emotion')
+@app.route('/get_emotion')
 def get_emotion():
     """Get current emotion data."""
     return jsonify(current_emotion)
 
-@main.route('/set_reference_image', methods=['POST'])
+def allowed_file(filename):
+    """Check if the file extension is allowed."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def process_uploaded_image(file):
+    """Process an uploaded image file for face recognition."""
+    if file and allowed_file(file.filename):
+        # Read the image data
+        image_data = file.read()
+        
+        # Convert to numpy array for face_recognition
+        image = face_recognition.load_image_file(io.BytesIO(image_data))
+        
+        # Get face encodings
+        face_encodings = face_recognition.face_encodings(image)
+        
+        if not face_encodings:
+            return None
+            
+        return face_encodings[0]
+    return None
+
+@app.route('/set_reference_image', methods=['POST'])
 def set_reference_image():
     """Set the reference image for live comparison."""
     if 'reference_image' not in request.files:
         return jsonify({"success": False, "error": "No file uploaded"}), 400
         
     file = request.files['reference_image']
-    success, message = face_recognizer.set_reference_image(file)
+    face_encoding = process_uploaded_image(file)
     
-    if not success:
-        return jsonify({"success": False, "error": message}), 400
+    if face_encoding is None:
+        return jsonify({"success": False, "error": "No face detected in image"}), 400
+        
+    global reference_image_encoding
+    reference_image_encoding = face_encoding
     
-    return jsonify({"success": True, "message": message})
+    return jsonify({"success": True})
 
-@main.route('/compare_live', methods=['POST'])
+@app.route('/compare_live', methods=['POST'])
 def compare_live():
     """Compare the current frame with the reference image."""
+    if reference_image_encoding is None:
+        return jsonify({"success": False, "error": "No reference image set"}), 400
+        
     if 'current_image' not in request.files:
         return jsonify({"success": False, "error": "No file uploaded"}), 400
         
     file = request.files['current_image']
-    success, message, is_match, confidence = face_recognizer.compare_live(file)
+    current_encoding = process_uploaded_image(file)
     
-    if not success:
-        return jsonify({"success": False, "error": message}), 400
+    if current_encoding is None:
+        return jsonify({"success": False, "error": "No face detected in current frame"}), 400
+    
+    # Compare face encodings
+    face_distance = face_recognition.face_distance([reference_image_encoding], current_encoding)[0]
+    is_match = bool(face_distance <= face_recognizer_tolerance)  # Convert to Python bool
     
     return jsonify({
         "success": True,
         "is_match": is_match,
-        "confidence": confidence
+        "confidence": float(1 - face_distance)  # Convert to Python float
     })
 
-@main.route('/compare_images', methods=['POST'])
+@app.route('/compare_images', methods=['POST'])
 def compare_images():
     """Compare two uploaded images for face recognition."""
     if 'image1' not in request.files or 'image2' not in request.files:
         return jsonify({"success": False, "error": "Two images required"}), 400
         
-    success, message, is_match, confidence = face_recognizer.compare_images(
-        request.files['image1'],
-        request.files['image2']
-    )
+    # Process both images
+    encoding1 = process_uploaded_image(request.files['image1'])
+    encoding2 = process_uploaded_image(request.files['image2'])
     
-    if not success:
-        return jsonify({"success": False, "error": message}), 400
+    if encoding1 is None or encoding2 is None:
+        return jsonify({"success": False, "error": "No face detected in one or both images"}), 400
+    
+    # Compare face encodings
+    face_distance = face_recognition.face_distance([encoding1], encoding2)[0]
+    is_match = bool(face_distance <= face_recognizer_tolerance)  # Convert to Python bool
     
     return jsonify({
         "success": True,
         "is_match": is_match,
-        "confidence": confidence
-    }) 
+        "confidence": float(1 - face_distance)  # Convert to Python float
+    })
+
+if __name__ == "__main__":
+    app.run(debug=True) 
