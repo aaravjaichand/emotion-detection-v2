@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection</title>
+    <style>
+        :root {
+            --primary-color: #00ff9d;
+            --bg-dark: #1a1a1a;
+            --bg-darker: #141414;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --card-bg: #242424;
+            --border-color: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            aspect-ratio: 16/9;
+            background-color: var(--bg-darker);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .emotion-display {
+            margin: 30px auto;
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(145deg, rgba(0, 255, 157, 0.1), rgba(0, 255, 157, 0.05));
+            border-radius: 16px;
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            max-width: 800px;
+        }
+
+        .emotion-text {
+            font-size: 3.5em;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .confidence-text {
+            font-size: 1.2em;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(0, 255, 157, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+        }
+
+        .instructions h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        .instructions ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .instructions li {
+            margin: 10px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .instructions li:before {
+            content: "•";
+            color: var(--primary-color);
+            position: absolute;
+            left: 0;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: rgba(0, 255, 157, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            font-weight: 500;
+        }
+
+        .upload-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(0, 255, 157, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+        }
+
+        .upload-section h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-section form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .drop-zone {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background-color: var(--bg-darker);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .drop-zone.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 255, 157, 0.05);
+        }
+
+        .drop-zone svg {
+            width: 48px;
+            height: 48px;
+            fill: var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .drop-zone:hover svg {
+            transform: scale(1.1);
+        }
+
+        .drop-zone-text {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 1.1em;
+        }
+
+        .drop-zone-text strong {
+            color: var(--primary-color);
+        }
+
+        .file-input-wrapper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .selected-file-name {
+            margin-top: 10px;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            text-align: center;
+            padding: 8px 16px;
+            background-color: var(--bg-darker);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            min-height: 20px;
+            display: block;
+        }
+
+        .selected-file-name:empty::before {
+            content: "No file selected";
+            color: var(--text-secondary);
+        }
+
+        .classify-button {
+            margin-top: 15px;
+            padding: 12px 30px;
+            background-color: var(--primary-color);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0;
+            transform: translateY(10px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .classify-button.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .classify-button:hover {
+            background-color: #00cc7d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 157, 0.3);
+        }
+
+        .classify-button:active {
+            transform: translateY(0);
+        }
+
+        .classify-button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        #uploadResult {
+            margin-top: 15px;
+            width: 100%;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+
+            .video-container {
+                max-width: 100%;
+            }
+
+            .emotion-text {
+                font-size: 2.5em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .emotion-text {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Real-time Emotion Detection</h1>
+        <div class="video-container">
+            <img src="{{ url_for('video_feed') }}" class="video-feed" alt="Video feed">
+        </div>
+        <div class="emotion-display">
+            <h2 class="emotion-text" id="emotion-text">Neutral</h2>
+            <p class="confidence-text" id="confidence-text">Confidence: 0.00</p>
+        </div>
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ul>
+                <li>Allow camera access when prompted</li>
+                <li>Position your face clearly in the frame</li>
+                <li>The detected emotion will be displayed in real-time</li>
+            </ul>
+        </div>
+        <div class="upload-section">
+            <h2>Upload an Image</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="drop-zone" id="dropZone">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    <div class="drop-zone-text">
+                        Drag and drop your image here<br>
+                        <strong>or click to browse</strong>
+                    </div>
+                    <div class="file-input-wrapper">
+                        <input type="file" name="file" accept=".png, .jpg, .jpeg" required>
+                    </div>
+                </div>
+                <div class="selected-file-name" id="selectedFileName"></div>
+                <button type="button" class="classify-button" id="classifyButton">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                    </svg>
+                    Classify Image
+                </button>
+            </form>
+            <div id="uploadResult" class="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        function updateEmotion() {
+            fetch('/get_emotion')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('emotion-text').textContent = data.emotion;
+                    document.getElementById('confidence-text').textContent = `Confidence: ${data.confidence.toFixed(2)}`;
+                });
+        }
+
+        // Handle file upload
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const resultDiv = document.getElementById('uploadResult');
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    resultDiv.textContent = `Error: ${data.error}`;
+                    resultDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+                    resultDiv.style.borderColor = 'rgba(255, 0, 0, 0.2)';
+                } else {
+                    resultDiv.textContent = `Detected Emotion: ${data.emotion} (Confidence: ${data.confidence.toFixed(2)})`;
+                    resultDiv.style.backgroundColor = 'rgba(0, 255, 157, 0.1)';
+                    resultDiv.style.borderColor = 'rgba(0, 255, 157, 0.2)';
+                }
+                resultDiv.style.display = 'block';
+            })
+            .catch(error => {
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+                resultDiv.style.borderColor = 'rgba(255, 0, 0, 0.2)';
+                resultDiv.style.display = 'block';
+            });
+        });
+
+        // Show selected file name and classify button
+        document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || 'No file selected';
+            const selectedFileName = document.getElementById('selectedFileName');
+            const classifyButton = document.getElementById('classifyButton');
+            
+            selectedFileName.textContent = fileName;
+            if (fileName !== 'No file selected') {
+                classifyButton.classList.add('visible');
+            } else {
+                classifyButton.classList.remove('visible');
+            }
+        });
+
+        // Handle classify button click
+        document.getElementById('classifyButton').addEventListener('click', function() {
+            document.getElementById('uploadForm').dispatchEvent(new Event('submit'));
+        });
+
+        // Drag and drop handlers
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.querySelector('input[type="file"]');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            const fileName = files[0]?.name || 'No file selected';
+            const selectedFileName = document.getElementById('selectedFileName');
+            const classifyButton = document.getElementById('classifyButton');
+            
+            selectedFileName.textContent = fileName;
+            if (fileName !== 'No file selected') {
+                classifyButton.classList.add('visible');
+            } else {
+                classifyButton.classList.remove('visible');
+            }
+        }
+
+        // Update emotion every second
+        setInterval(updateEmotion, 1000);
+        updateEmotion(); // Initial update
+    </script>
+</body>
+</html> 

@@ -2,6 +2,9 @@ from transformers import pipeline
 from PIL import Image
 import numpy as np
 import cv2
+from flask import Flask, request, jsonify, render_template
+from werkzeug.utils import secure_filename
+import os
 
 class EmotionDetector:
     def __init__(self):
@@ -75,6 +78,24 @@ class EmotionDetector:
         cap.release()
         cv2.destroyAllWindows()
 
+    def upload_image(self, image_path):
+        """
+        Upload an image from the specified path and detect emotion.
+        
+        Args:
+            image_path (str): Path to the image file
+            
+        Returns:
+            dict: Dictionary containing the predicted emotion and confidence score
+        """
+        # Load the image
+        image = Image.open(image_path)
+        
+        # Detect emotion
+        result = self.detect_emotion(image)
+        
+        return result
+
 # Example usage
 if __name__ == "__main__":
     # Initialize the detector
@@ -82,10 +103,49 @@ if __name__ == "__main__":
     
     # Start webcam feed
     detector.start_webcam()
-
+    
     # Example with a test image
     # Replace 'path_to_image.jpg' with your image path
-    # image = Image.open('path_to_image.jpg')
-    # result = detector.detect_emotion(image)
+    # result = detector.upload_image('path_to_image.jpg')
     # print(f"Detected emotion: {result['emotion']}")
-    # print(f"Confidence: {result['confidence']:.2f}") 
+    # print(f"Confidence: {result['confidence']:.2f}")
+
+app = Flask(__name__)
+
+# Set the upload folder and allowed extensions
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Function to check allowed file extensions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/')
+def index():
+    return render_template('upload.html')
+
+@app.route('/upload', methods=['POST'])
+def upload_image():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        # Call the emotion detection function
+        result = detector.detect_emotion(Image.open(file_path))
+        
+        return jsonify({"message": "File uploaded successfully", "emotion": result['emotion'], "confidence": result['confidence']}), 200
+    else:
+        return jsonify({"error": "File type not allowed"}), 400
+
+if __name__ == "__main__":
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+    app.run(debug=True) 

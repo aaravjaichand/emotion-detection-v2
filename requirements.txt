@@ -4,4 +4,5 @@ fer>=22.5.0
 tensorflow==2.13.0
 transformers>=4.37.0
 torch>=2.0.0
-Pillow>=10.0.0 
+Pillow>=10.0.0
+flask>=3.0.0 
