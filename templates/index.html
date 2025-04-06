@@ -13,18 +13,58 @@
             --text-secondary: #b3b3b3;
             --card-bg: #242424;
             --border-color: #333333;
+            --menu-height: 60px;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .menu-bar {
+            background-color: var(--bg-darker);
+            height: var(--menu-height);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-item {
+            color: var(--text-primary);
+            text-decoration: none;
+            padding: 0 20px;
+            height: var(--menu-height);
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(0, 255, 157, 0.1);
+            color: var(--primary-color);
+        }
+
+        .menu-item.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .content {
+            margin-top: var(--menu-height);
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            color: var(--text-primary);
         }
 
         .container {
@@ -323,47 +363,53 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Real-time Emotion Detection</h1>
-        <div class="video-container">
-            <img src="{{ url_for('video_feed') }}" class="video-feed" alt="Video feed">
-        </div>
-        <div class="emotion-display">
-            <h2 class="emotion-text" id="emotion-text">Neutral</h2>
-            <p class="confidence-text" id="confidence-text">Confidence: 0.00</p>
-        </div>
-        <div class="instructions">
-            <h3>Instructions:</h3>
-            <ul>
-                <li>Allow camera access when prompted</li>
-                <li>Position your face clearly in the frame</li>
-                <li>The detected emotion will be displayed in real-time</li>
-            </ul>
-        </div>
-        <div class="upload-section">
-            <h2>Upload an Image</h2>
-            <form id="uploadForm" enctype="multipart/form-data">
-                <div class="drop-zone" id="dropZone">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
-                    <div class="drop-zone-text">
-                        Drag and drop your image here<br>
-                        <strong>or click to browse</strong>
+    <div class="menu-bar">
+        <a href="/" class="menu-item active">Emotion Detection</a>
+        <a href="/face_recognition" class="menu-item">Face Recognition</a>
+    </div>
+    <div class="content">
+        <div class="container">
+            <h1>Real-time Emotion Detection</h1>
+            <div class="video-container">
+                <img src="{{ url_for('video_feed') }}" class="video-feed" alt="Video feed">
+            </div>
+            <div class="emotion-display">
+                <h2 class="emotion-text" id="emotion-text">Neutral</h2>
+                <p class="confidence-text" id="confidence-text">Confidence: 0.00</p>
+            </div>
+            <div class="instructions">
+                <h3>Instructions:</h3>
+                <ul>
+                    <li>Allow camera access when prompted</li>
+                    <li>Position your face clearly in the frame</li>
+                    <li>The detected emotion will be displayed in real-time</li>
+                </ul>
+            </div>
+            <div class="upload-section">
+                <h2>Upload an Image</h2>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="drop-zone" id="dropZone">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        <div class="drop-zone-text">
+                            Drag and drop your image here<br>
+                            <strong>or click to browse</strong>
+                        </div>
+                        <div class="file-input-wrapper">
+                            <input type="file" name="file" accept=".png, .jpg, .jpeg" required>
+                        </div>
                     </div>
-                    <div class="file-input-wrapper">
-                        <input type="file" name="file" accept=".png, .jpg, .jpeg" required>
-                    </div>
-                </div>
-                <div class="selected-file-name" id="selectedFileName"></div>
-                <button type="button" class="classify-button" id="classifyButton">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                    </svg>
-                    Classify Image
-                </button>
-            </form>
-            <div id="uploadResult" class="status" style="display: none;"></div>
+                    <div class="selected-file-name" id="selectedFileName"></div>
+                    <button type="button" class="classify-button" id="classifyButton">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                        </svg>
+                        Classify Image
+                    </button>
+                </form>
+                <div id="uploadResult" class="status" style="display: none;"></div>
+            </div>
         </div>
     </div>
 

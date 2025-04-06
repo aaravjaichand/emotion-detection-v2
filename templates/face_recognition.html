@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition</title>
+    <style>
+        :root {
+            --primary-color: #00ff9d;
+            --bg-dark: #1a1a1a;
+            --bg-darker: #141414;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --card-bg: #242424;
+            --border-color: #333333;
+            --menu-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .menu-bar {
+            background-color: var(--bg-darker);
+            height: var(--menu-height);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-item {
+            color: var(--text-primary);
+            text-decoration: none;
+            padding: 0 20px;
+            height: var(--menu-height);
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(0, 255, 157, 0.1);
+            color: var(--primary-color);
+        }
+
+        .menu-item.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .content {
+            margin-top: var(--menu-height);
+            padding: 20px;
+        }
+
+        .section-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .section {
+            flex: 1;
+            min-width: 300px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .webcam-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: var(--bg-darker);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .webcam-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .button {
+            background-color: var(--primary-color);
+            color: var(--bg-dark);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 157, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.secondary {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .upload-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .upload-box {
+            flex: 1;
+            aspect-ratio: 1;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upload-box:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 255, 157, 0.05);
+        }
+
+        .upload-box.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 255, 157, 0.1);
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: rgba(0, 255, 157, 0.1);
+            display: none;
+        }
+
+        .result.match {
+            background-color: rgba(0, 255, 157, 0.1);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+        }
+
+        .result.no-match {
+            background-color: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+        }
+
+        .status-text {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+
+        .status-text.active {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-bar">
+        <a href="/" class="menu-item">Emotion Detection</a>
+        <a href="/face_recognition" class="menu-item active">Face Recognition</a>
+    </div>
+
+    <div class="content">
+        <div class="section-container">
+            <div class="section">
+                <h2>Capture Reference Images</h2>
+                <div class="webcam-container">
+                    <video id="webcam" class="webcam-feed" autoplay playsinline></video>
+                </div>
+                <p class="status-text" id="statusText">Click 'Capture Reference Image 1' to start</p>
+                <button id="captureBtn" class="button">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="8" fill="currentColor"/>
+                    </svg>
+                    Capture Reference Image 1
+                </button>
+            </div>
+
+            <div class="section">
+                <h2>Compare Images</h2>
+                <div class="upload-container">
+                    <div class="upload-box" id="upload1">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <p>Reference Image 1<br>or click to browse</p>
+                        <input type="file" hidden accept="image/*">
+                        <img class="preview-image" alt="First image preview">
+                    </div>
+                    <div class="upload-box" id="upload2">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <p>Reference Image 2<br>or click to browse</p>
+                        <input type="file" hidden accept="image/*">
+                        <img class="preview-image" alt="Second image preview">
+                    </div>
+                </div>
+                <button id="compareBtn" class="button" disabled>Compare Images</button>
+                <button id="resetBtn" class="button secondary" style="margin-left: 10px;">Reset</button>
+                <div id="uploadResult" class="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Webcam handling
+        const video = document.getElementById('webcam');
+        const captureBtn = document.getElementById('captureBtn');
+        const statusText = document.getElementById('statusText');
+        const upload1 = document.getElementById('upload1');
+        const upload2 = document.getElementById('upload2');
+        const compareBtn = document.getElementById('compareBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const uploadResult = document.getElementById('uploadResult');
+        let currentCapture = 1;
+
+        function resetState() {
+            // Reset images
+            upload1.querySelector('.preview-image').style.display = 'none';
+            upload2.querySelector('.preview-image').style.display = 'none';
+            upload1.querySelector('input[type="file"]').value = '';
+            upload2.querySelector('input[type="file"]').value = '';
+            
+            // Reset status
+            currentCapture = 1;
+            statusText.textContent = 'Click "Capture Reference Image 1" or upload images to start';
+            statusText.classList.remove('active');
+            
+            // Reset buttons
+            captureBtn.disabled = false;
+            compareBtn.disabled = true;
+            captureBtn.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="8" fill="currentColor"/>
+                </svg>
+                Capture Reference Image 1
+            `;
+            
+            // Clear result
+            uploadResult.style.display = 'none';
+            uploadResult.classList.remove('match', 'no-match');
+        }
+
+        // Reset button handler
+        resetBtn.addEventListener('click', resetState);
+
+        // File upload handling
+        function handleFileSelect(file, previewElement) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewElement.src = e.target.result;
+                    previewElement.style.display = 'block';
+                    checkAndEnableCompare();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function checkAndEnableCompare() {
+            const preview1 = upload1.querySelector('.preview-image');
+            const preview2 = upload2.querySelector('.preview-image');
+            
+            if (preview1.src && preview2.src) {
+                compareBtn.disabled = false;
+                statusText.textContent = 'Both images ready! Click "Compare Images" to analyze';
+                statusText.classList.add('active');
+            }
+        }
+
+        // Click to upload
+        upload1.addEventListener('click', () => upload1.querySelector('input[type="file"]').click());
+        upload2.addEventListener('click', () => upload2.querySelector('input[type="file"]').click());
+
+        // File input change
+        upload1.querySelector('input[type="file"]').addEventListener('change', (e) => {
+            handleFileSelect(e.target.files[0], upload1.querySelector('.preview-image'));
+        });
+
+        upload2.querySelector('input[type="file"]').addEventListener('change', (e) => {
+            handleFileSelect(e.target.files[0], upload2.querySelector('.preview-image'));
+        });
+
+        // Drag and drop handling
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            upload1.addEventListener(eventName, preventDefaults, false);
+            upload2.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            upload1.addEventListener(eventName, () => upload1.classList.add('dragover'), false);
+            upload2.addEventListener(eventName, () => upload2.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            upload1.addEventListener(eventName, () => upload1.classList.remove('dragover'), false);
+            upload2.addEventListener(eventName, () => upload2.classList.remove('dragover'), false);
+        });
+
+        upload1.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFileSelect(file, upload1.querySelector('.preview-image'));
+            }
+        });
+
+        upload2.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFileSelect(file, upload2.querySelector('.preview-image'));
+            }
+        });
+
+        async function setupWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing webcam:', err);
+                statusText.textContent = 'Error: Could not access webcam';
+                statusText.style.color = 'red';
+            }
+        }
+
+        // Capture reference image
+        captureBtn.addEventListener('click', async () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            // Convert canvas to blob
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+            
+            // Display the captured image in the appropriate upload box
+            const previewElement = currentCapture === 1 ? 
+                upload1.querySelector('.preview-image') : 
+                upload2.querySelector('.preview-image');
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewElement.src = e.target.result;
+                previewElement.style.display = 'block';
+                
+                // Update status and button text
+                if (currentCapture === 1) {
+                    currentCapture = 2;
+                    statusText.textContent = 'Click "Capture Reference Image 2" to continue';
+                    captureBtn.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="8" fill="currentColor"/>
+                        </svg>
+                        Capture Reference Image 2
+                    `;
+                } else {
+                    statusText.textContent = 'Both images captured! Click "Compare Images" to analyze';
+                    statusText.classList.add('active');
+                    captureBtn.disabled = true;
+                    compareBtn.disabled = false;
+                }
+            };
+            reader.readAsDataURL(blob);
+        });
+
+        // Compare images
+        compareBtn.addEventListener('click', async () => {
+            const preview1 = upload1.querySelector('.preview-image');
+            const preview2 = upload2.querySelector('.preview-image');
+            
+            if (!preview1.src || !preview2.src) {
+                uploadResult.textContent = 'Please capture both reference images';
+                uploadResult.style.display = 'block';
+                uploadResult.classList.remove('match');
+                uploadResult.classList.add('no-match');
+                return;
+            }
+
+            // Convert base64 to blob
+            const response1 = await fetch(preview1.src);
+            const response2 = await fetch(preview2.src);
+            const blob1 = await response1.blob();
+            const blob2 = await response2.blob();
+
+            const formData = new FormData();
+            formData.append('image1', blob1, 'image1.jpg');
+            formData.append('image2', blob2, 'image2.jpg');
+
+            try {
+                const response = await fetch('/compare_images', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    uploadResult.textContent = `Match: ${data.is_match ? 'Yes' : 'No'} (Confidence: ${(data.confidence * 100).toFixed(1)}%)`;
+                    uploadResult.style.display = 'block';
+                    uploadResult.classList.remove('match', 'no-match');
+                    uploadResult.classList.add(data.is_match ? 'match' : 'no-match');
+                } else {
+                    throw new Error(data.error || 'Failed to compare images');
+                }
+            } catch (err) {
+                console.error('Error comparing images:', err);
+                uploadResult.textContent = `Error: ${err.message}`;
+                uploadResult.style.display = 'block';
+                uploadResult.classList.remove('match');
+                uploadResult.classList.add('no-match');
+            }
+        });
+
+        // Initialize webcam
+        setupWebcam();
+    </script>
+</body>
+</html> 
