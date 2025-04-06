@@ -1,0 +1,12 @@
+libsm6
+libxext6
+libxrender-dev
+libglib2.0-0
+libgl1-mesa-glx
+libgomp1
+libdlib-dev
+libopenblas-dev
+libatlas-base-dev
+libjasper-dev
+libqtgui4
+libqt4-test 
