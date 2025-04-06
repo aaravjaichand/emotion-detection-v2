@@ -22,6 +22,14 @@ A modern web application that performs real-time emotion detection using facial 
   - Real-time emotion display with confidence scores
   - Smooth animations and transitions
 
+- **Face Recognition Features**
+  - Compare two images for face matching
+  - Live webcam capture for reference images
+  - Drag-and-drop image comparison
+  - Confidence scores for face matches
+  - Support for multiple face detection
+  - Real-time face comparison with webcam
+
 ## Technical Details
 
 ### Model Architecture
@@ -46,6 +54,8 @@ A modern web application that performs real-time emotion detection using facial 
 - Flask for web server
 - Modern web browser with camera access
 - Minimum 4GB RAM recommended
+- dlib library for face recognition
+- face_recognition library for face comparison
 
 ## Installation
 
@@ -84,6 +94,18 @@ http://localhost:5000
 3. Click the "Classify Image" button
 4. View the emotion detection results
 
+### Face Recognition Mode
+1. Navigate to the Face Recognition page
+2. Choose between two methods:
+   - **Webcam Capture**:
+     1. Click "Capture Reference Image 1" to take the first photo
+     2. Click "Capture Reference Image 2" to take the second photo
+     3. Click "Compare Images" to analyze
+   - **Image Upload**:
+     1. Drag and drop or click to upload two images
+     2. Click "Compare Images" to analyze
+3. View the face matching results with confidence score
+
 ## Limitations
 
 - Requires good lighting conditions for optimal performance
@@ -93,6 +115,9 @@ http://localhost:5000
   - Heavily occluded faces
   - Low-resolution images
   - Extreme lighting conditions
+  - Multiple faces in the same image
+  - Faces at extreme angles
+  - Poor quality or blurry images
 
 ## Browser Support
 
