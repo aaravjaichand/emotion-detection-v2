@@ -21,6 +21,7 @@ COPY . /app
 # Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+RUN pip install transformers
 
 # Set environment variables
 ENV PORT=5000
