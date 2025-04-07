@@ -24,15 +24,28 @@ current_emotion = {"emotion": "Neutral", "confidence": 0.0}
 # Set the allowed extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
+def get_camera():
+    """Get camera instance with error handling."""
+    try:
+        camera = cv2.VideoCapture(0)
+        if not camera.isOpened():
+            raise Exception("Could not open camera")
+        return camera
+    except Exception as e:
+        print(f"Error initializing camera: {e}")
+        return None
+
 def generate_frames():
     """Generate frames from webcam with emotion detection."""
-    cap = cv2.VideoCapture(0)
-    
+    camera = get_camera()
+    if camera is None:
+        return
+        
     # Set camera properties for better performance
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  # Reduced resolution
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    cap.set(cv2.CAP_PROP_FPS, 30)  # Set to 30 FPS
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimize buffer size
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  # Reduced resolution
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    camera.set(cv2.CAP_PROP_FPS, 30)  # Set to 30 FPS
+    camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimize buffer size
     
     # Initialize variables for frame skipping
     frame_count = 0
@@ -41,7 +54,7 @@ def generate_frames():
     
     try:
         while True:
-            success, frame = cap.read()
+            success, frame = camera.read()
             if not success:
                 break
                 
@@ -72,7 +85,7 @@ def generate_frames():
             time.sleep(0.01)
     finally:
         # Ensure resources are properly released
-        cap.release()
+        camera.release()
         cv2.destroyAllWindows()
 
 @app.route('/')
@@ -184,4 +197,5 @@ def compare_images():
     })
 
 if __name__ == "__main__":
-    app.run(debug=True) 
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port) 
