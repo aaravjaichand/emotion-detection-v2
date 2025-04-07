@@ -6,6 +6,7 @@ primary_region = "lhr"
 
 [env]
   PORT = "5001"
+  PYTHON_VERSION = "3.10.12"
 
 [http_service]
   internal_port = 5001
@@ -18,4 +19,11 @@ primary_region = "lhr"
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 1024 
+  memory_mb = 1024
+
+[deploy]
+  strategy = "immediate"
+  release_command = "python -m pip install -r requirements.txt"
+
+[processes]
+  app = "python app.py" 
