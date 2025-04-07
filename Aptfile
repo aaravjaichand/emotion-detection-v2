@@ -15,5 +15,5 @@ libdlib-dev
 libopenblas-dev
 libatlas-base-dev
 libjasper-dev
-libqtgui4
-libqt4-test 
+libqt5gui5
+libqt5test5 
