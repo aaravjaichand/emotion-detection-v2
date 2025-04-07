@@ -14,6 +14,4 @@ libgomp1
 libdlib-dev
 libopenblas-dev
 libatlas-base-dev
-libjasper-dev
-libqt5gui5
-libqt5test5 
+libjasper-dev 
