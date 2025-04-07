@@ -2,14 +2,13 @@ app = "emotion-detection-v2"
 primary_region = "lhr"
 
 [build]
-  builder = "paketobuildpacks/builder:base"
+  dockerfile = "Dockerfile"
 
 [env]
-  PORT = "5001"
-  PYTHON_VERSION = "3.10.12"
+  PORT = "5000"
 
 [http_service]
-  internal_port = 5001
+  internal_port = 5000
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
@@ -23,7 +22,3 @@ primary_region = "lhr"
 
 [deploy]
   strategy = "immediate"
-  release_command = "python -m pip install -r requirements.txt"
-
-[processes]
-  app = "python app.py"
