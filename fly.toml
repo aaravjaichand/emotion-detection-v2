@@ -26,4 +26,4 @@ primary_region = "lhr"
   release_command = "python -m pip install -r requirements.txt"
 
 [processes]
-  app = "python app.py" 
+  app = "python app.py"
