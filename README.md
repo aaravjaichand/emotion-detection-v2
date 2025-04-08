@@ -21,7 +21,7 @@ This project combines emotion detection and face recognition capabilities using 
 
 1. Clone the repository:
 ```bash
-git clone (https://github.com/aaravjaichand/emotion-detection-v2.git)
+git clone https://github.com/aaravjaichand/emotion-detection-v2.git
 cd emotion-detection-v2
 ```
 
@@ -52,30 +52,30 @@ sudo apt-get install -y build-essential cmake
 
 3. Create a new virtual environment:
 ```bash
-python3 -m venv emotion-detection-v3
+python3 -m venv emotion-detection-v2
 ```
 
 4. Activate the virtual environment:
 
 For macOS/Linux:
 ```bash
-source emotion-detection-v3/bin/activate
+source emotion-detection-v2/bin/activate
 ```
 
 For Windows:
 ```bash
-.\emotion-detection-v3\Scripts\activate
+.\emotion-detection-v2\Scripts\activate
 ```
 
 5. Install pip in the virtual environment:
 ```bash
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-./emotion-detection-v3/bin/python get-pip.py
+./emotion-detection-v2/bin/python get-pip.py
 ```
 
 6. Install the required packages:
 ```bash
-./emotion-detection-v3/bin/pip install -r requirements.txt
+./emotion-detection-v2/bin/pip install -r requirements.txt
 ```
 
 ## Running the Application
@@ -84,12 +84,12 @@ curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 
 For macOS/Linux:
 ```bash
-source emotion-detection-v3/bin/activate
+source emotion-detection-v2/bin/activate
 ```
 
 For Windows:
 ```bash
-.\emotion-detection-v3\Scripts\activate
+.\emotion-detection-v2\Scripts\activate
 ```
 
 2. Start the Flask application:
