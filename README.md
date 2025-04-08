@@ -35,12 +35,6 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 brew install cmake
 ```
 
-### Ubuntu/Debian:
-```bash
-sudo apt-get update
-sudo apt-get install -y build-essential cmake
-```
-
 ### Windows:
 1. Install Visual Studio Build Tools:
    - Download from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
