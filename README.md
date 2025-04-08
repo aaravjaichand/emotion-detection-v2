@@ -21,7 +21,7 @@ This project combines emotion detection and face recognition capabilities using 
 
 1. Clone the repository:
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/aaravjaichand/emotion-detection-v2.git
 cd emotion-detection-v2
 ```
 
