@@ -141,4 +141,4 @@ http://localhost:8080
 
 ## License
 
-[Your chosen license]
+MIT
